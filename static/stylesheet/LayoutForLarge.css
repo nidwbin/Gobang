@@ -1,0 +1,39 @@
+#ChessBoard {
+    width: 600px;
+    height: 600px;
+    cursor: pointer;
+    float: left;
+    box-shadow: 2px 2px 20px peru;
+    background-size: 100%;
+    background-repeat: no-repeat;
+}
+
+.ChessBoardBase {
+    width: 40px;
+    height: 40px;
+    background-size: 100%;
+    background-repeat: no-repeat;
+}
+
+#ChessBoardContainer {
+
+}
+
+#Panels {
+    width: 400px;
+    height: 600px;
+    float: left;
+}
+
+#ButtonPanel {
+    margin: 200px 10% auto 10%
+}
+
+#InfoPanel {
+    position: absolute;
+    width: 20%;
+    height: auto;
+    top: 100px;
+    right: 100px;
+    z-index: 1;
+}

@@ -4,22 +4,56 @@
     <meta charset="UTF-8">
     <title>主页</title>
     <link rel="stylesheet" type="text/css" href="/static/bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="/static/bootstrap/css/bootstrap-theme.min.css">
-    <style>
+    <link rel="stylesheet" type="text/css" href="/static/stylesheet/CommonStyle.css">
 
-    </style>
 </head>
-<body>
+<body style="min-width: 600px;">
 <nav class="navbar navbar-light navbar-expand-lg bg-light">
     <a href="/" class="navbar-brand">
         Gobang
     </a>
 </nav>
+<div id="ChessBoardContainer" class="container">
+    <div id="ChessBoard" class="ChessBoardBackground">
+    </div>
+    <div id="Panels">
+        <div id="InfoPanel"></div>
+        <div id="ButtonPanel">
+            <ul class="list-group">
+                <li class="list-group-item">
+                    <div class="row">
+                        <select class="custom-select custom-select-lg col-6 offset-1">
+                            <option selected value="BlackChess">先手</option>
+                            <option value="WhiteChess">后手</option>
+                        </select>
+                        <button class="btn btn-lg btn-outline-primary col-4">开始</button>
+                    </div>
+                </li>
+                <li class="list-group-item">
+                    <button class="btn btn-lg btn-outline-danger col-4 offset-1">复位</button>
+                    <button class="btn btn-lg btn-outline-warning col-4 offset-2">悔棋</button>
+                </li>
+                <li class="list-group-item">
+                    <button class="btn btn-lg btn-outline-primary col-4 offset-1">存盘</button>
+                    <button class="btn btn-lg btn-outline-primary col-4 offset-2">复盘</button>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
 <script src="/static/javascript/jquery-3.4.1.min.js"></script>
 <script src="/static/bootstrap/js/bootstrap.min.js"></script>
 <script src="/static/javascript/init.js"></script>
+<script src="/static/javascript/CommonScript.js"></script>
+<script src="/static/javascript/ChessBoardLineStyleSetter.js"></script>
 <script>
+    $(document).ready(init());
 
+    function init() {
+        setLayout();
+        makeChessBoardLineStyle();
+        drawChessBoard();
+    }
 </script>
 </body>
 </html>
