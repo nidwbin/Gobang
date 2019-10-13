@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>主页</title>
     <link rel="stylesheet" type="text/css" href="/static/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="/static/toastr/toastr.css">
     <link rel="stylesheet" type="text/css" href="/static/stylesheet/CommonStyle.css">
 
 </head>
@@ -17,25 +18,26 @@
     <div id="ChessBoard" class="ChessBoardBackground">
     </div>
     <div id="Panels">
-        <div id="InfoPanel"></div>
         <div id="ButtonPanel">
             <ul class="list-group">
                 <li class="list-group-item">
                     <div class="row">
-                        <select class="custom-select custom-select-lg col-6 offset-1">
+                        <select id="ChessSelect" class="custom-select custom-select-lg col-6 offset-1">
                             <option selected value="BlackChess">先手</option>
                             <option value="WhiteChess">后手</option>
                         </select>
-                        <button class="btn btn-lg btn-outline-primary col-4">开始</button>
+                        <button id="start" class="btn btn-lg btn-outline-primary col-4" onclick="startPlay()">开始
+                        </button>
                     </div>
                 </li>
                 <li class="list-group-item">
-                    <button class="btn btn-lg btn-outline-danger col-4 offset-1">复位</button>
-                    <button class="btn btn-lg btn-outline-warning col-4 offset-2">悔棋</button>
+                    <button id="reset" class="btn btn-lg btn-outline-danger col-4 offset-1" onclick="reset()">复位
+                    </button>
+                    <button id="repent" class="btn btn-lg btn-outline-warning col-4 offset-2">悔棋</button>
                 </li>
                 <li class="list-group-item">
-                    <button class="btn btn-lg btn-outline-primary col-4 offset-1">存盘</button>
-                    <button class="btn btn-lg btn-outline-primary col-4 offset-2">复盘</button>
+                    <button id="save" class="btn btn-lg btn-outline-primary col-4 offset-1">存盘</button>
+                    <button id="load" class="btn btn-lg btn-outline-primary col-4 offset-2">复盘</button>
                 </li>
             </ul>
         </div>
@@ -43,6 +45,7 @@
 </div>
 <script src="/static/javascript/jquery-3.4.1.min.js"></script>
 <script src="/static/bootstrap/js/bootstrap.min.js"></script>
+<script src="/static/toastr/toastr.min.js"></script>
 <script src="/static/javascript/init.js"></script>
 <script src="/static/javascript/CommonScript.js"></script>
 <script src="/static/javascript/ChessBoardLineStyleSetter.js"></script>
@@ -52,8 +55,11 @@
     function init() {
         setLayout();
         makeChessBoardLineStyle();
-        drawChessBoard();
+        drawChessBoard(0);
+        setButtons();
     }
+
+
 </script>
 </body>
 </html>

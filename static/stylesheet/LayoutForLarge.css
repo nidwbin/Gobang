@@ -15,10 +15,6 @@
     background-repeat: no-repeat;
 }
 
-#ChessBoardContainer {
-
-}
-
 #Panels {
     width: 400px;
     height: 600px;
@@ -27,13 +23,4 @@
 
 #ButtonPanel {
     margin: 200px 10% auto 10%
-}
-
-#InfoPanel {
-    position: absolute;
-    width: 20%;
-    height: auto;
-    top: 100px;
-    right: 100px;
-    z-index: 1;
 }

@@ -1,9 +1,10 @@
-let player, lastId, Map, History, Top, Mode;
+let player, turn, lastId, Map, History, Top, Mode;
 
 function InitConstant(mode) {
     player = false;
+    turn = false;
     lastId = null;
-    history = [];
+    History = [];
     Top = 0;
     Mode = mode;
     Map = [];
@@ -48,6 +49,14 @@ function drawChessBoard(mode) {
 }
 
 function putChess(id) {
+    if (Mode === 0) {
+        toastr['error']('错误，还未开始游戏，请先开始游戏');
+        return;
+    }
+    if (turn !== player) {
+        toastr['error']('错误，当前不是您的回合，请等待对方落子');
+        return;
+    }
     let address, classes, tId, x, y;
     address = $('#' + id);
     classes = address.attr('class');
@@ -56,19 +65,21 @@ function putChess(id) {
     x = Number(tId[0]);
     y = Number(tId[1]);
     if (Map[x][y] === 1) {
+        toastr['warning']('您不能在此处落子，此处已有白棋');
         return;
     }
     if (Map[x][y] === -1) {
+        toastr['warning']('您不能在此处落子，此处已有黑棋');
         return;
     }
-    if (player) {
+    if (turn) {
         address.attr('class', 'WhiteChess-Checked-' + classes[0]);
         Map[x][y] = 1;
     } else {
         address.attr('class', 'BlackChess-Checked-' + classes[0]);
         Map[x][y] = -1;
     }
-    player = !player;
+    turn = !turn;
     if (lastId !== null) {
         address = $('#' + lastId);
         classes = address.attr('class');
@@ -89,11 +100,82 @@ function setLayout() {
     }
 }
 
-function reset(mode) {
-
-    InitConstant(mode);
+function reset() {
+    let ChessBoard = $('#ChessBoard');
+    ChessBoard.html('');
+    drawChessBoard(0);
+    setButtons();
 }
 
 function repent() {
 
+}
+
+function startPlay() {
+    let chessSelect = $('#ChessSelect').val();
+    player = chessSelect !== 'BlackChess';
+    Mode = 1;
+    setButtons();
+    if (player === true) {
+
+    }
+}
+
+function setButtons() {
+    let chessSelect, start, reset, repent, save, load;
+    chessSelect = $('#ChessSelect');
+    start = $('#start');
+    reset = $('#reset');
+    repent = $('#repent');
+    save = $('#save');
+    load = $('#load');
+    switch (Mode) {
+        case 0: {
+            chessSelect.attr('disabled', false);
+            start.attr('disabled', false);
+            reset.attr('disabled', true);
+            repent.attr('disabled', true);
+            save.attr('disabled', true);
+            load.attr('disabled', false);
+            break;
+        }
+        case 1: {
+            chessSelect.attr('disabled', true);
+            start.attr('disabled', true);
+            reset.attr('disabled', false);
+            repent.attr('disabled', false);
+            save.attr('disabled', false);
+            load.attr('disabled', false);
+            break;
+        }
+        case 2: {
+            chessSelect.attr('disabled', true);
+            start.attr('disabled', true);
+            reset.attr('disabled', false);
+            reset.innerText = '认输';
+            repent.attr('disabled', true);
+            save.attr('disabled', true);
+            load.attr('disabled', true);
+            break;
+        }
+    }
+}
+
+function sendPoint(x, y) {
+    $.ajax({
+        url: '',
+        type: 'post',
+        data: {
+            'message': 'sendPoint',
+            'x': x,
+            'y': y,
+            'step': Top,
+        },
+        success: function () {
+
+        },
+        error: function () {
+
+        }
+    })
 }
