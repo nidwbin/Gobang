@@ -18,6 +18,9 @@
     <div id="ChessBoard" class="ChessBoardBackground">
     </div>
     <div id="Panels">
+        <div id="Timer">
+            <div id="TimerNumber" class="text-dark">00</div>
+        </div>
         <div id="ButtonPanel">
             <ul class="list-group">
                 <li class="list-group-item">
@@ -55,11 +58,12 @@
     function init() {
         setLayout();
         makeChessBoardLineStyle();
-        drawChessBoard(0);
+        drawChessBoard();
+        InitConstant();
+        checkWebsocket();
         setButtons();
+        setTimer();
     }
-
-
 </script>
 </body>
 </html>

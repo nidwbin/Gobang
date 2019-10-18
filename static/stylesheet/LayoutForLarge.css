@@ -22,5 +22,21 @@
 }
 
 #ButtonPanel {
-    margin: 200px 10% auto 10%
+    margin: 10px 10% auto 10%;
+}
+
+#Timer {
+    width: 200px;
+    height: 200px;
+    border-radius: 100px;
+    margin: 0 100px auto 100px;
+}
+
+#TimerNumber {
+    float: left;
+    width: 130px;
+    height: 150px;
+    font-family: "Roboto", "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+    font-size: 100px;
+    margin: 25px 35px 25px 35px;
 }

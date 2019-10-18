@@ -1,12 +1,17 @@
-let player, turn, lastId, Map, History, Top, Mode;
+let player, turn, lastId, Map, History, Top, Mode, webSocket;
+let backTimer, times, timerNumber, timer;
+timerNumber = $('#TimerNumber');
+timer = $('#Timer');
 
-function InitConstant(mode) {
+
+function InitConstant() {
     player = false;
     turn = false;
     lastId = null;
     History = [];
+    times = 30;
     Top = 0;
-    Mode = mode;
+    Mode = -1;
     Map = [];
     for (let i = 0; i < 15; ++i) {
         Map.push([]);
@@ -16,7 +21,7 @@ function InitConstant(mode) {
     }
 }
 
-function drawChessBoard(mode) {
+function drawChessBoard() {
     let ChessBoard = $('#ChessBoard');
     for (let i = 0; i < 15; ++i) {
         ChessBoard.append('<div id=row-' + i + ' class="ChessBoardRow"></div>');
@@ -45,7 +50,6 @@ function drawChessBoard(mode) {
         }
         row.append('<div id="' + i + '-14" class="Right ChessBoardBase"  onclick="putChess(this.id)"></div>');
     }
-    InitConstant(mode);
 }
 
 function putChess(id) {
@@ -72,6 +76,20 @@ function putChess(id) {
         toastr['warning']('您不能在此处落子，此处已有黑棋');
         return;
     }
+    sendMessage('chess-' + id + '-' + player);
+    drawChess(address, classes, id, x, y);
+
+}
+
+function getChess(id, x, y) {
+    let address, classes;
+    address = $('#' + id);
+    classes = address.attr('class');
+    classes = classes.split('-');
+    drawChess(address, classes, id, x, y);
+}
+
+function drawChess(address, classes, id, x, y) {
     if (turn) {
         address.attr('class', 'WhiteChess-Checked-' + classes[0]);
         Map[x][y] = 1;
@@ -88,6 +106,8 @@ function putChess(id) {
     }
     lastId = id;
     History[Top++] = id;
+    clearInterval(backTimer);
+    Timer(30);
 }
 
 function setLayout() {
@@ -103,8 +123,11 @@ function setLayout() {
 function reset() {
     let ChessBoard = $('#ChessBoard');
     ChessBoard.html('');
-    drawChessBoard(0);
+    drawChessBoard();
+    InitConstant();
+    checkWebsocket();
     setButtons();
+    webSocket.close();
 }
 
 function repent() {
@@ -116,9 +139,8 @@ function startPlay() {
     player = chessSelect !== 'BlackChess';
     Mode = 1;
     setButtons();
-    if (player === true) {
-
-    }
+    startWebSocket();
+    Timer(30);
 }
 
 function setButtons() {
@@ -130,6 +152,15 @@ function setButtons() {
     save = $('#save');
     load = $('#load');
     switch (Mode) {
+        case -1: {
+            chessSelect.attr('disabled', true);
+            start.attr('disabled', true);
+            reset.attr('disabled', true);
+            repent.attr('disabled', true);
+            save.attr('disabled', true);
+            load.attr('disabled', true);
+            break;
+        }
         case 0: {
             chessSelect.attr('disabled', false);
             start.attr('disabled', false);
@@ -161,21 +192,92 @@ function setButtons() {
     }
 }
 
-function sendPoint(x, y) {
-    $.ajax({
-        url: '',
-        type: 'post',
-        data: {
-            'message': 'sendPoint',
-            'x': x,
-            'y': y,
-            'step': Top,
-        },
-        success: function () {
-
-        },
-        error: function () {
-
+function sendMessage(message) {
+    switch (webSocket.readyState) {
+        case 0: {
+            window.setTimeout(sendMessage, 100);
+            break;
         }
-    })
+        case 1: {
+            webSocket.send(message);
+            break;
+        }
+        case 2: {
+            break;
+        }
+        case 3: {
+            break;
+        }
+    }
+}
+
+function webSocketError(e) {
+
+}
+
+function webSocketMessage(message) {
+    if (message.data === 'linked') {
+        return true;
+    } else {
+        let data = message.data.split('-');
+        if (data[0] === 'chess') {
+            getChess(data[1] + '-' + data[2], data[1], data[2]);
+        }
+    }
+}
+
+function startWebSocket() {
+    webSocket = new WebSocket('ws://' + window.location.host + window.location.pathname);
+    webSocket.onmessage = webSocketMessage;
+    webSocket.onerror = webSocketError;
+    webSocket.onopen = function () {
+        sendMessage('start-' + Mode + '-' + player);
+    }
+}
+
+function checkWebsocket() {
+    if ('WebSocket' in window) {
+        Mode = 0;
+    } else {
+        toastr['error']('错误，您的浏览器不支持本页面');
+    }
+}
+
+function Timer(Time) {
+    times = Time;
+    backTimer = setInterval(setTimer, 1000);
+}
+
+function setTimer() {
+    console.log(times);
+    if (times <= -1) {
+        clearInterval(backTimer);
+        TimeOut();
+        return;
+    }
+    if (times <= 5) {
+        timer.css('background', '#dc3545')
+    } else {
+        timer.css('background', '#7abaff')
+    }
+    if (turn) {
+        timerNumber.attr('class', 'text-white');
+    } else {
+        timerNumber.attr('class', 'text-dark');
+    }
+    let number = times.toString();
+    if (times < 10) {
+        number = '0' + number;
+    }
+    timerNumber.html(number);
+    times -= 1;
+}
+
+function TimeOut() {
+    if (turn === player) {
+        turn = !turn;
+        sendMessage('timeout');
+    } else {
+        toastr['warning']('您的网络好像出现了问题');
+    }
 }
