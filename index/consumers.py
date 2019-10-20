@@ -14,7 +14,12 @@ class index(WebsocketConsumer):
         self.accept()
 
     def disconnect(self, code):
-        pass
+        self.mode = 0
+        self.player = False
+        self.history = []
+        self.top = 0
+        self.length = 0
+        self.gobang = alogrithm.Gobang
 
     def receive(self, text_data=None, bytes_data=None):
         messages = text_data.split('-')
@@ -33,6 +38,12 @@ class index(WebsocketConsumer):
             x = int(messages[1])
             y = int(messages[2])
             point = []
-            if self.gobang.put_chess(self.player, False, x, y):
+            if self.gobang.put_chess(player=self.player, timeout=False, x=x, y=y):
                 point = self.gobang.get_chess(not self.player)
-            self.send('chess-' + str(point[0]) + '-' + str(point[1]))
+            if point[0] is -1:
+                if point[1] is -1:
+                    self.send('win-BlackChess')
+                else:
+                    self.send('win-WhiteChess')
+            else:
+                self.send('chess-' + str(point[0]) + '-' + str(point[1]))

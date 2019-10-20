@@ -127,6 +127,9 @@ function reset() {
     InitConstant();
     checkWebsocket();
     setButtons();
+    clearInterval(backTimer);
+    times = 30;
+    setTimer();
     webSocket.close();
 }
 
@@ -174,7 +177,7 @@ function setButtons() {
             chessSelect.attr('disabled', true);
             start.attr('disabled', true);
             reset.attr('disabled', false);
-            repent.attr('disabled', false);
+            repent.attr('disabled', true);
             save.attr('disabled', false);
             load.attr('disabled', false);
             break;
@@ -183,7 +186,6 @@ function setButtons() {
             chessSelect.attr('disabled', true);
             start.attr('disabled', true);
             reset.attr('disabled', false);
-            reset.innerText = '认输';
             repent.attr('disabled', true);
             save.attr('disabled', true);
             load.attr('disabled', true);
@@ -223,6 +225,15 @@ function webSocketMessage(message) {
         if (data[0] === 'chess') {
             getChess(data[1] + '-' + data[2], data[1], data[2]);
         }
+        if (data[0] === 'win') {
+            clearInterval(backTimer);
+            Mode = 2;
+            if (data[2] === 'BlackChess') {
+                toastr['success']('黑棋胜出');
+            } else {
+                toastr['success']('白棋胜出');
+            }
+        }
     }
 }
 
@@ -249,7 +260,6 @@ function Timer(Time) {
 }
 
 function setTimer() {
-    console.log(times);
     if (times <= -1) {
         clearInterval(backTimer);
         TimeOut();
