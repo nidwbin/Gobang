@@ -9,7 +9,7 @@ function InitConstant() {
     turn = false;
     lastId = null;
     History = [];
-    times = 30;
+    times = 60;
     Top = 0;
     Mode = -1;
     Map = [];
@@ -107,7 +107,7 @@ function drawChess(address, classes, id, x, y) {
     lastId = id;
     History[Top++] = id;
     clearInterval(backTimer);
-    Timer(30);
+    Timer(60);
 }
 
 function setLayout() {
@@ -128,13 +128,21 @@ function reset() {
     checkWebsocket();
     setButtons();
     clearInterval(backTimer);
-    times = 30;
+    times = 60;
     setTimer();
     webSocket.close();
 }
 
 function repent() {
+    sendMessage('repent');
+}
 
+function save() {
+    sendMessage('save');
+}
+
+function load() {
+    sendMessage('load');
 }
 
 function startPlay() {
@@ -143,7 +151,7 @@ function startPlay() {
     Mode = 1;
     setButtons();
     startWebSocket();
-    Timer(30);
+    Timer(60);
 }
 
 function setButtons() {
@@ -232,6 +240,17 @@ function webSocketMessage(message) {
                 toastr['success']('黑棋胜出');
             } else {
                 toastr['success']('白棋胜出');
+            }
+        }
+        if (data[0] === 'repent') {
+            x = data[1];
+            y = data[2];
+            Top -= 1;
+            let point = History[Top].split('-');
+            if (point[0] === x && point[1] === y) {
+                History.pop();
+                Map[x][y] = 0;
+                turn = !turn;
             }
         }
     }

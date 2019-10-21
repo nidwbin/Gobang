@@ -33,6 +33,9 @@ class index(WebsocketConsumer):
                 self.player = True
             self.send('linked')
             self.gobang = alogrithm.Gobang(player=self.player, mode=self.mode)
+            if self.player is True:
+                point = self.gobang.first_hand()
+                self.send('chess-' + str(point[0]) + '-' + str(point[1]))
             return
         if messages[0] == 'chess':
             x = int(messages[1])
@@ -45,12 +48,28 @@ class index(WebsocketConsumer):
                 elif tmp is -1:
                     self.send('win-BlackChess')
                 else:
+                    self.send('chess-' + str(point[0]) + '-' + str(point[1]))
                     self.send('win-WhiteChess')
             elif tmp is -1:
                 self.send('win-BlackChess')
             else:
                 self.send('win-WhiteChess')
+            return
         if messages[0] == 'timeout':
             self.gobang.put_chess(player=self.player, timeout=True)
             point = self.gobang.get_chess(not self.player)
             self.send('chess-' + str(point[0]) + '-' + str(point[1]))
+            return
+        if messages[0] == 'repent':
+            point = self.gobang.repent()
+            self.send('repent-' + str(point[0][0]) + '-' + str(point[0][1]))
+            self.send('repent-' + str(point[1][0]) + '-' + str(point[1][1]))
+            return
+        if messages[0] == 'save':
+            status = self.gobang.save('../files/', 'saved.txt')
+            self.send('save-' + str(status))
+            return
+        if messages[0] == 'load':
+            status = self.gobang.save('../files/', 'saved.txt')
+            self.send('save-' + str(status))
+            return

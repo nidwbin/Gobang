@@ -1,11 +1,11 @@
 import os
 import copy
-import time
+import random
 
 
 class Constant:
     directions = ((1, 0), (0, 1), (1, 1), (1, -1), (-1, 0), (0, -1), (-1, -1), (-1, 1))
-    score = (1, 10, 100, 1000, 1000, 0, 1, 10, 100, 1000, 0, 0, 0, 0, 1000)
+    score = (1, 10, 1000, 10000, 100000, 0, 1, 100, 1000, 100000, 0, 0, 0, 0, 100000)
     BlackChess = -1
     WhiteChess = 1
     Blank = 0
@@ -22,8 +22,9 @@ class Gobang(Constant):
     __max_min = [15, 15, -1, -1]
     __Neighbors = []
     __Scores = []
+    __rate = 1.5
 
-    def __init__(self, player=False, mode=-1):
+    def __init__(self, player=False, mode=-1, rate=1.5):
         self.__Player = player
         self.__Mode = mode
         self.__Scores = [[0, 0] for _ in range(60)]
@@ -33,6 +34,15 @@ class Gobang(Constant):
         self.__Turn = False
         self.__History = []
         self.__Top = 0
+        self.__rate = rate
+
+    @staticmethod
+    def __get_total_score(scores):
+        score = [0, 0]
+        for i in scores:
+            score[0] += i[0]
+            score[1] += i[1]
+        return score
 
     def __get_neighbor_points(self, point=(0, 0), the_map=None, neighbor=None):
         if neighbor is None:
@@ -60,13 +70,13 @@ class Gobang(Constant):
             the_map[x][y] = self.WhiteChess
         else:
             the_map[x][y] = self.BlackChess
-        if x < max_min[0]:
+        if x <= max_min[0]:
             max_min[0] = x - 1
-        if y < max_min[1]:
+        if y <= max_min[1]:
             max_min[1] = y - 1
-        if x > max_min[2]:
+        if x >= max_min[2]:
             max_min[2] = x + 1
-        if y > max_min[3]:
+        if y >= max_min[3]:
             max_min[3] = y + 1
         if neighbor is not None:
             neighbor = self.__get_neighbor_points(point=point, the_map=the_map, neighbor=neighbor)
@@ -103,16 +113,7 @@ class Gobang(Constant):
         else:
             return 0
 
-    def is_win(self, point, max_min, the_map):
-        points = self.__clu_start_point(point=point, max_min=max_min)
-        for i in range(4):
-            t = self.__is_win(max_min=max_min, the_map=the_map, start_point=points[i],
-                              direction=self.directions[i])
-            if t is not self.Blank:
-                return t
-        return 0
-
-    def __scan_map(self, max_min, the_map, start_point, direction):
+    def __scan_row(self, max_min, the_map, start_point, direction):
         x = start_point[0]
         y = start_point[1]
         min_x = max(max_min[0] + 1, 0)
@@ -198,20 +199,12 @@ class Gobang(Constant):
         x = point[0]
         points = self.__clu_start_point(point=point, max_min=max_min)
         for i in range(4):
-            score = self.__scan_map(max_min=max_min, the_map=the_map, start_point=points[i],
+            score = self.__scan_row(max_min=max_min, the_map=the_map, start_point=points[i],
                                     direction=self.directions[i])
             t = x + i * 15
             scores[t][0] += score[0]
             scores[t][1] += score[1]
         return scores
-
-    @staticmethod
-    def __get_total_score(scores):
-        score = [0, 0]
-        for i in scores:
-            score[0] += i[0]
-            score[1] += i[1]
-        return score
 
     def __clu_start_point(self, point, max_min):
         x = point[0]
@@ -235,9 +228,9 @@ class Gobang(Constant):
         if deep <= 0 or t is not self.Blank:
             score = self.__get_total_score(scores=scores)
             if self.__Player is True:
-                score = score[0] - score[1]
+                score = score[0] - int(score[1] * self.__rate)
             else:
-                score = score[1] - score[0]
+                score = score[1] - int(score[0] * self.__rate)
             return score, (-1, -1)
         point = (-1, -1)
         for i in neighbor:
@@ -246,20 +239,20 @@ class Gobang(Constant):
                                                                           player=player, point=(i[0], i[1]),
                                                                           max_min=copy.deepcopy(max_min),
                                                                           scores=copy.deepcopy(scores))
-            score, point = self.__get_chess(the_map=t_the_map, neighbor=t_neighbor, scores=t_scores,
-                                            player=not player, max_min=t_max_min, alpha=alpha,
-                                            beta=beta, deep=deep - 1, point=(i[0], i[1]))
+            score, t_point = self.__get_chess(the_map=t_the_map, neighbor=t_neighbor, scores=t_scores,
+                                              player=not player, max_min=t_max_min, alpha=alpha,
+                                              beta=beta, deep=deep - 1, point=(i[0], i[1]))
             if player is not self.__Player:
                 if score > alpha:
                     alpha = score
                     point = (i[0], i[1])
-                    if score > beta:
+                    if score >= beta:
                         break
             else:
                 if score < beta:
                     beta = score
                     point = (i[0], i[1])
-                    if score < alpha:
+                    if score <= alpha:
                         break
         if player is not self.__Player:
             return alpha, point
@@ -285,6 +278,15 @@ class Gobang(Constant):
                                         beta=self.Inf, deep=3)
         return self.put_chess(player=player, timeout=False, point=point), point
 
+    def is_win(self, point, max_min, the_map):
+        points = self.__clu_start_point(point=point, max_min=max_min)
+        for i in range(4):
+            t = self.__is_win(max_min=max_min, the_map=the_map, start_point=points[i],
+                              direction=self.directions[i])
+            if t is not self.Blank:
+                return t
+        return 0
+
     def save(self, path, name):
         if not os.path.exists(path):
             os.makedirs(path)
@@ -295,7 +297,44 @@ class Gobang(Constant):
                 file = open(path + name, 'w')
                 file.writelines(str(self.__Map) + '\n')
                 file.writelines(str(self.__History) + '\n')
-                file.writelines(str(self.__max_min))
-                file.writelines(str(self.__Top) + ' ' + str(self.__Turn) + ' ' + str(self.__Player) + ' ' + str(
+                file.writelines(str(self.__max_min) + '\n')
+                file.writelines(str(self.__Top) + '\n' + str(self.__Turn) + '\n' + str(self.__Player) + '\n' + str(
                     self.__Mode) + '\n')
                 return True
+
+    def repent(self):
+        point = [0, 0]
+        for i in range(2):
+            self.__Top -= 1
+            point[i] = self.__History[self.__Top]
+            self.__History.pop(self.__Top)
+        return point
+
+    def load(self, path, name):
+        if os.path.exists(path + name):
+            return False
+        else:
+            i = 0
+            a = []
+            file = open(path + name, 'r')
+            for line in file.readlines():
+                line = line.strip()
+                a[i] = line
+                i += 1
+            self.__Map = a[0]
+            self.__History = a[1]
+            self.__max_min = a[2]
+            self.__Top = a[3]
+            self.__Turn = a[4]
+            self.__Player = a[5]
+            self.__Mode = a[6]
+            return True
+
+    def first_hand(self, the_map=None):
+        if the_map is None:
+            the_map = self.__Map
+        x = random.randint(5, 11)
+        y = random.randint(5, 11)
+        point = (x, y)
+        the_map[x][y] = self.BlackChess
+        return point
