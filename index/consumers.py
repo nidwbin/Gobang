@@ -39,8 +39,13 @@ class index(WebsocketConsumer):
             y = int(messages[2])
             tmp = self.gobang.put_chess(player=self.player, timeout=False, point=(x, y))
             if tmp is 0:
-                point = self.gobang.get_chess(not self.player)
-                self.send('chess-' + str(point[0]) + '-' + str(point[1]))
+                tmp, point = self.gobang.get_chess(not self.player)
+                if tmp is 0:
+                    self.send('chess-' + str(point[0]) + '-' + str(point[1]))
+                elif tmp is -1:
+                    self.send('win-BlackChess')
+                else:
+                    self.send('win-WhiteChess')
             elif tmp is -1:
                 self.send('win-BlackChess')
             else:
