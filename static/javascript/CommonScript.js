@@ -228,7 +228,7 @@ function webSocketMessage(message) {
         if (data[0] === 'win') {
             clearInterval(backTimer);
             Mode = 2;
-            if (data[2] === 'BlackChess') {
+            if (data[1] === 'BlackChess') {
                 toastr['success']('黑棋胜出');
             } else {
                 toastr['success']('白棋胜出');

@@ -1,12 +1,14 @@
 import os
+import copy
 
 
 class Constant:
     directions = ((1, 0), (0, 1), (1, 1), (1, -1), (-1, 0), (0, -1), (-1, -1), (-1, 1))
-    score = (1, 10, 100, 1000, 0, 1, 10, 100)
+    score = (1, 10, 100, 1000, 1000, 0, 1, 10, 100, 1000, 0, 0, 0, 0, 1000)
     BlackChess = -1
     WhiteChess = 1
     Blank = 0
+    Inf = 0x3f3f3f3f
 
 
 class Gobang(Constant):
@@ -18,20 +20,94 @@ class Gobang(Constant):
     __Mode = -1
     __max_min = [15, 15, -1, -1]
     __Neighbors = []
+    __Scores = []
 
-    def __init__(self, player, mode):
+    def __init__(self, player=False, mode=-1):
         self.__Player = player
         self.__Mode = mode
-        for i in range(15):
-            self.__Map.append([])
-            for j in range(15):
-                self.__Map[i].append(0)
+        self.__Scores = [[0, 0] for _ in range(60)]
+        self.__Map = [[0 for _ in range(15)] for _ in range(15)]
+        self.__Neighbors = []
+        self.__max_min = [15, 15, -1, -1]
+        self.__Turn = False
+        self.__History = []
+        self.__Top = 0
 
-    def __scan_map(self, max_min=None, the_map=None, start_point=(0, 0), direction=(1, 0)):
+    def __get_neighbor_points(self, point=(0, 0), the_map=None, neighbor=None, deep=2):
+        if neighbor is None:
+            neighbor = self.__Neighbors
         if the_map is None:
             the_map = self.__Map
-        if max_min is None:
-            max_min = self.__max_min
+        for i in self.directions:
+            for j in range(1, 1 + deep):
+                x = point[0] + i[0] * j
+                y = point[1] + i[1] * j
+                if 0 <= x <= 14 and 0 <= y <= 14:
+                    if the_map[x][y] is self.Blank:
+                        if not (j, x, y) in neighbor:
+                            neighbor.append((j, x, y))
+                    else:
+                        if (j, x, y) in neighbor:
+                            neighbor.pop(neighbor.index((j, x, y)))
+        x = point[0]
+        y = point[1]
+        for j in range(1, 1 + deep):
+            if (j, x, y) in neighbor:
+                neighbor.pop(neighbor.index((j, x, y)))
+        neighbor.sort()
+        return neighbor
+
+    def __put_chess(self, the_map, neighbor, player, point, max_min, scores):
+        x = point[0]
+        y = point[1]
+        if player:
+            the_map[x][y] = self.WhiteChess
+        else:
+            the_map[x][y] = self.BlackChess
+        if x <= max_min[0]:
+            max_min[0] = x - 1
+        if y <= max_min[1]:
+            max_min[1] = y - 1
+        if x >= max_min[2]:
+            max_min[2] = x + 1
+        if y >= max_min[3]:
+            max_min[3] = y + 1
+        if neighbor is not None:
+            neighbor = self.__get_neighbor_points(point=point, the_map=the_map, neighbor=neighbor, deep=1)
+        scores = self.__get_scores(point=point, the_map=the_map, max_min=max_min, scores=scores)
+        return the_map, neighbor, max_min, scores
+
+    def __is_win(self, max_min, the_map, start_point, direction):
+        x = start_point[0]
+        y = start_point[1]
+        min_x = max(max_min[0] + 1, 0)
+        min_y = max(max_min[1] + 1, 0)
+        max_x = min(max_min[2] - 1, 14)
+        max_y = min(max_min[3] - 1, 14)
+        total = 0
+        chess = 0
+        while min_x <= x <= max_x and min_y <= y <= max_y and total < 5:
+            if the_map[x][y] is self.Blank:
+                chess = 0
+                total = 0
+            else:
+                if chess is 0:
+                    chess = the_map[x][y]
+                    total = 1
+                else:
+                    if the_map[x][y] is chess:
+                        total += 1
+                    else:
+                        chess = the_map[x][y]
+                        total = 1
+            x += direction[0]
+            y += direction[1]
+        if total >= 5:
+            return chess
+        else:
+            return 0
+
+    def __scan_map(self, max_min, the_map, start_point, direction):
         x = start_point[0]
         y = start_point[1]
         min_x = max(max_min[0] + 1, 0)
@@ -57,14 +133,16 @@ class Gobang(Constant):
                     if the_map[x][y] is chess:
                         total += 1
                     else:
-                        if total >= 5:
-                            return [-1, chess]
+                        if before is self.Blank:
+                            if chess is self.BlackChess:
+                                score[0] += self.score[total + 4]
+                            else:
+                                score[1] += self.score[total + 4]
                         else:
-                            if before is self.Blank:
-                                if chess is self.BlackChess:
-                                    score[0] += self.score[total + 3]
-                                else:
-                                    score[1] += self.score[total + 3]
+                            if chess is self.BlackChess:
+                                score[0] += self.score[total + 9]
+                            else:
+                                score[1] += self.score[total + 9]
                         total = 1
                         before = chess
                         chess = the_map[x][y]
@@ -72,21 +150,21 @@ class Gobang(Constant):
                 if chess is -2:
                     chess = self.Blank
                 elif chess is not self.Blank:
-                    if total >= 5:
-                        return [-1, chess]
+                    if before is self.Blank:
+                        if chess is self.BlackChess:
+                            score[0] += self.score[total - 1]
+                        else:
+                            score[1] += self.score[total - 1]
                     else:
-                        if before is self.Blank:
-                            if chess is self.BlackChess:
-                                score[0] += self.score[total - 1]
-                            else:
-                                score[1] += self.score[total - 1]
+                        if chess is self.BlackChess:
+                            score[0] += self.score[total + 4]
+                        else:
+                            score[1] += self.score[total + 4]
                     total = 0
                     chess = self.Blank
             x += direction[0]
             y += direction[1]
         if total is not 0:
-            if total >= 5:
-                return [-1, chess]
             if x < 14 and y < 14:
                 if before is self.Blank:
                     if chess is self.BlackChess:
@@ -95,146 +173,128 @@ class Gobang(Constant):
                         score[1] += self.score[total - 1]
                 else:
                     if chess is self.BlackChess:
-                        score[0] += self.score[total + 3]
+                        score[0] += self.score[total + 4]
                     else:
-                        score[1] += self.score[total + 3]
+                        score[1] += self.score[total + 4]
             else:
                 if before is self.Blank:
                     if chess is self.BlackChess:
-                        score[0] += self.score[total + 3]
+                        score[0] += self.score[total + 4]
                     else:
-                        score[1] += self.score[total + 3]
+                        score[1] += self.score[total + 4]
+                else:
+                    if chess is self.BlackChess:
+                        score[0] += self.score[total + 9]
+                    else:
+                        score[1] += self.score[total + 9]
         return score
 
-    def __get_score(self, the_map=None, max_min=None):
-        if the_map is None:
-            the_map = self.__Map
-        if max_min is None:
-            max_min = self.__max_min
+    def __get_scores(self, point, the_map, max_min, scores):
+        x = point[0]
+        points = self.__clu_start_point(point=point, max_min=max_min)
+        for i in range(4):
+            score = self.__scan_map(max_min=max_min, the_map=the_map, start_point=points[i],
+                                    direction=self.directions[i])
+            t = x + i * 15
+            scores[t][0] += score[0]
+            scores[t][1] += score[1]
+        return scores
+
+    @staticmethod
+    def __get_total_score(scores):
         score = [0, 0]
-        inputs = []
-        for i in range(max_min[1] + 1, max_min[3]):
-            inputs.append([(max_min[0] + 1, i), self.directions[0]])
-            inputs.append([(max_min[0] + 1, i), self.directions[2]])
-            inputs.append([(max_min[0] + 1, i), self.directions[3]])
-        for i in range(max_min[0] + 1, max_min[2]):
-            inputs.append([(i, max_min[1] + 1), self.directions[1]])
-            inputs.append([(i, max_min[1] + 1), self.directions[2]])
-            inputs.append([(i, max_min[3] - 1), self.directions[3]])
-        for i in inputs:
-            tmp = self.__scan_map(the_map=the_map, start_point=i[0], direction=i[1])
-            if tmp[0] is -1:
-                return tmp
-            else:
-                score[0] += tmp[0]
-                score[1] += tmp[1]
+        for i in scores:
+            score[0] += i[0]
+            score[1] += i[1]
         return score
 
-    def __get_neighbor_points(self, point=(0, 0), the_map=None, neighbor=None, deep=2):
-        if neighbor is None:
-            neighbor = self.__Neighbors
-        if the_map is None:
-            the_map = self.__Map
-        for i in self.directions:
-            for j in range(1, 1 + deep):
-                x = point[0] + i[0] * j
-                y = point[1] + i[1] * j
-                if 0 <= x <= 14 and 0 <= y <= 14:
-                    if the_map[x][y] is self.Blank:
-                        if not (x, y, j) in neighbor:
-                            neighbor.append((x, y, j))
-                    else:
-                        if (x, y, j) in neighbor:
-                            neighbor.pop(neighbor.index((x, y, j)))
-        neighbor.sort()
-        return neighbor
-
-    def __put_chess(self, the_map, neighbor, player, point, max_min):
+    def __clu_start_point(self, point, max_min):
         x = point[0]
         y = point[1]
-        if player:
-            the_map[x][y] = self.WhiteChess
-        else:
-            the_map[x][y] = self.BlackChess
-        if x <= max_min[0]:
-            max_min[0] = x - 1
-        if y <= max_min[1]:
-            max_min[1] = y - 1
-        if x >= max_min[2]:
-            max_min[2] = x + 1
-        if y >= max_min[3]:
-            max_min[3] = y + 1
-        if neighbor is not None:
-            neighbor = self.__get_neighbor_points(point=point, the_map=the_map, neighbor=neighbor)
-        return the_map, neighbor, max_min
+        min_x = max(max_min[0] + 1, 0)
+        min_y = max(max_min[1] + 1, 0)
+        points = [(min_x, y), (x, min_y)]
+        for i in range(2, 4):
+            x = point[0]
+            y = point[1]
+            while max_min[0] < x < max_min[2] and max_min[1] < y < max_min[3]:
+                x -= self.directions[i][0]
+                y -= self.directions[i][1]
+            points.append((x + self.directions[i][0], y + self.directions[i][1]))
+        return points
 
-    def __get_chess(self, the_map, neighbor, max_min, player, alpha, beta, deep):
-        total = -2
-        point = [-2, -2]
-        for i in neighbor:
-            t_map, t_neighbor, t_max_min = self.__put_chess(the_map == the_map, neighbor=neighbor, player=player,
-                                                            point=(i[0], i[1]), max_min=max_min)
-            if deep > 0:
-                ans, point = self.__get_chess(the_map=t_map, neighbor=t_neighbor, max_min=t_max_min, player=not player,
-                                              alpha=alpha, beta=beta, deep=deep - 1)
-                if ans is -3:
-                    alpha = point
-                if ans is -4:
-                    beta = point
-            score = self.__get_score(the_map=t_map, max_min=t_max_min)
-            if score[0] is -1:
-                return score
-            if player is True:
-                score = score[1] - score[0]
-                beta = max(beta, score)
-                if score < alpha:
-                    return -3, alpha
-            else:
+    def __get_chess(self, the_map, neighbor, scores, player, max_min, alpha, beta, deep, point):
+        t = self.Blank
+        if point is not None:
+            points = self.__clu_start_point(point=point, max_min=self.__max_min)
+            for j in range(4):
+                t = self.__is_win(max_min=self.__max_min, the_map=self.__Map, start_point=points[j],
+                                  direction=self.directions[j])
+                if t is not self.Blank:
+                    break
+        if deep <= 0 or t is not self.Blank:
+            score = self.__get_total_score(scores=scores)
+            if self.__Player is True:
                 score = score[0] - score[1]
-                alpha = max(alpha, score)
+            else:
+                score = score[1] - score[0]
+            return score, (-1, -1)
+        point = (-1, -1)
+        for i in neighbor:
+            t_the_map, t_neighbor, t_max_min, t_scores = self.__put_chess(the_map=copy.deepcopy(the_map),
+                                                                          neighbor=copy.deepcopy(neighbor),
+                                                                          player=player, point=(i[1], i[2]),
+                                                                          max_min=copy.deepcopy(max_min),
+                                                                          scores=copy.deepcopy(scores))
+
+            score, point = self.__get_chess(the_map=t_the_map, neighbor=t_neighbor, scores=t_scores,
+                                            player=not player, max_min=t_max_min, alpha=alpha,
+                                            beta=beta,
+                                            deep=deep - 1, point=(i[1], i[2]))
+            if player is not self.__Player:
+                if score > alpha:
+                    alpha = score
+                    point = (i[1], i[2])
+                if beta <= alpha:
+                    return alpha, point
+            else:
                 if score < beta:
-                    return -4, beta
-            if total < score:
-                total = score
-                point = (i[0], i[1])
-        return total, point
+                    beta = score
+                    point = (i[1], i[2])
+                if beta <= alpha:
+                    return beta, point
+        if player is not self.__Player:
+            return alpha, point
+        else:
+            return beta, point
 
     def put_chess(self, player=False, timeout=False, point=(-1, -1)):
-        if self.__Turn is player:
-            if not timeout:
-                self.__Map, self.__Neighbors, self.__max_min = self.__put_chess(the_map=self.__Map,
-                                                                                neighbor=self.__Neighbors,
-                                                                                player=player, point=point,
-                                                                                max_min=self.__max_min)
-                self.__History.append(point)
-                self.__Top += 1
-            self.__Turn = not self.__Turn
-            return True
-        else:
-            return False
+        if not timeout:
+            self.__Map, self.__Neighbors, self.__max_min, self.__Scores = self.__put_chess(the_map=self.__Map,
+                                                                                           neighbor=self.__Neighbors,
+                                                                                           player=player,
+                                                                                           point=point,
+                                                                                           max_min=self.__max_min,
+                                                                                           scores=self.__Scores)
+            self.__History.append(point)
+            self.__Top += 1
+            points = self.__clu_start_point(point=point, max_min=self.__max_min)
+            for i in range(4):
+                t = self.__is_win(max_min=self.__max_min, the_map=self.__Map, start_point=points[i],
+                                  direction=self.directions[i])
+                if t is not self.Blank:
+                    return t
+        self.__Turn = not self.__Turn
+        return 0
 
     def get_chess(self, player):
-        score = self.__get_score()
-        if score[0] is -1:
-            return score
-        else:
-            '''
-            i = input()
-            i = i.split(' ')
-            x = int(i[0])
-            y = int(i[1])
-            self.put_chess(player=player, x=x, y=y)
-            return [x, y]
-            '''
-            if player is False:
-                score = score[0] - score[1]
-            else:
-                score = score[1] - score[0]
-            point = []
-            neighbor = self.__Neighbors.copy()
-            the_map = self.__Map.copy()
-
-            return point
+        score, point = self.__get_chess(the_map=self.__Map, neighbor=self.__Neighbors,
+                                        scores=self.__Scores,
+                                        player=player, max_min=self.__max_min, alpha=-self.Inf,
+                                        beta=self.Inf,
+                                        deep=2, point=None)
+        self.put_chess(player=player, timeout=False, point=point)
+        return point
 
     def save(self, path, name):
         if not os.path.exists(path):
