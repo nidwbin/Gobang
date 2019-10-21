@@ -78,7 +78,6 @@ function putChess(id) {
     }
     sendMessage('chess-' + id + '-' + player);
     drawChess(address, classes, id, x, y);
-
 }
 
 function getChess(id, x, y) {
@@ -90,6 +89,12 @@ function getChess(id, x, y) {
 }
 
 function drawChess(address, classes, id, x, y) {
+    let repent = $('#repent');
+    if (turn === player) {
+        repent.attr('disabled', true);
+    } else {
+        repent.attr('disabled', false);
+    }
     if (turn) {
         address.attr('class', 'WhiteChess-Checked-' + classes[0]);
         Map[x][y] = 1;
@@ -133,16 +138,64 @@ function reset() {
     webSocket.close();
 }
 
-function repent() {
+function repent_b() {
     sendMessage('repent');
 }
 
-function save() {
+function save_b() {
     sendMessage('save');
 }
 
-function load() {
-    sendMessage('load');
+function load_b() {
+    startWebSocket('load');
+}
+
+function repent(data) {
+    let x, y, address, point, classes;
+    x = data[1];
+    y = data[2];
+    Top -= 1;
+    point = History[Top].split('-');
+    if (point[0] === x && point[1] === y) {
+        Map[x][y] = 0;
+        if (Top !== 0) {
+            lastId = History[Top - 1];
+        } else {
+            lastId = null;
+        }
+        turn = !turn;
+        address = $('#' + point[0] + '-' + point[1]);
+        classes = address.attr('class');
+        classes = classes.split('-');
+        address.attr('class', classes[2]);
+    }
+    if (lastId !== null) {
+        console.log(lastId);
+        address = $('#' + lastId);
+        classes = address.attr('class');
+        classes = classes.split('-');
+        address.attr('class', classes[0] + '-Checked-' + classes[2]);
+    }
+}
+
+function load(data) {
+    if (data[1] === 'false') {
+        toastr['error']('没有存档');
+    } else {
+        let t = parseInt(data[2]);
+        player = data[3] !== 'False';
+        Mode = parseInt(data[4]);
+        setButtons();
+        let tmp = data[5].split(' ');
+        for (let i = 0; i < t; ++i) {
+            let j = tmp[i].split(',');
+            let x, y;
+            x = parseInt(j[0]);
+            y = parseInt(j[1]);
+
+            getChess(x + '-' + y, x, y);
+        }
+    }
 }
 
 function startPlay() {
@@ -150,7 +203,7 @@ function startPlay() {
     player = chessSelect !== 'BlackChess';
     Mode = 1;
     setButtons();
-    startWebSocket();
+    startWebSocket('start-' + Mode + '-' + player);
     Timer(60);
 }
 
@@ -162,6 +215,11 @@ function setButtons() {
     repent = $('#repent');
     save = $('#save');
     load = $('#load');
+    if (player) {
+        chessSelect.val('WhiteChess');
+    } else {
+        chessSelect.val('BlackChess');
+    }
     switch (Mode) {
         case -1: {
             chessSelect.attr('disabled', true);
@@ -187,7 +245,7 @@ function setButtons() {
             reset.attr('disabled', false);
             repent.attr('disabled', true);
             save.attr('disabled', false);
-            load.attr('disabled', false);
+            load.attr('disabled', true);
             break;
         }
         case 2: {
@@ -221,10 +279,6 @@ function sendMessage(message) {
     }
 }
 
-function webSocketError(e) {
-
-}
-
 function webSocketMessage(message) {
     if (message.data === 'linked') {
         return true;
@@ -241,27 +295,29 @@ function webSocketMessage(message) {
             } else {
                 toastr['success']('白棋胜出');
             }
+            setButtons();
         }
         if (data[0] === 'repent') {
-            x = data[1];
-            y = data[2];
-            Top -= 1;
-            let point = History[Top].split('-');
-            if (point[0] === x && point[1] === y) {
-                History.pop();
-                Map[x][y] = 0;
-                turn = !turn;
+            repent(data);
+        }
+        if (data[0] === 'save') {
+            if (data[1] === 'True') {
+                toastr['success']('保存成功');
+            } else {
+                toastr['error']('出现错误');
             }
+        }
+        if (data[0] === 'load') {
+            load(data);
         }
     }
 }
 
-function startWebSocket() {
+function startWebSocket(message) {
     webSocket = new WebSocket('ws://' + window.location.host + window.location.pathname);
     webSocket.onmessage = webSocketMessage;
-    webSocket.onerror = webSocketError;
     webSocket.onopen = function () {
-        sendMessage('start-' + Mode + '-' + player);
+        sendMessage(message);
     }
 }
 

@@ -66,10 +66,14 @@ class index(WebsocketConsumer):
             self.send('repent-' + str(point[1][0]) + '-' + str(point[1][1]))
             return
         if messages[0] == 'save':
-            status = self.gobang.save('../files/', 'saved.txt')
+            status = self.gobang.save_map(path='./files/', name='saved.txt')
             self.send('save-' + str(status))
             return
         if messages[0] == 'load':
-            status = self.gobang.save('../files/', 'saved.txt')
-            self.send('save-' + str(status))
+            self.gobang = alogrithm.Gobang(player=self.player, mode=self.mode)
+            status, data = self.gobang.load_map(path='./files/', name='saved.txt')
+            if status is True:
+                self.send('load-true-' + data)
+            else:
+                status.send('load-false')
             return

@@ -287,20 +287,51 @@ class Gobang(Constant):
                 return t
         return 0
 
-    def save(self, path, name):
+    def save_map(self, path, name):
         if not os.path.exists(path):
             os.makedirs(path)
-        else:
-            if os.path.exists(path + name):
-                return False
-            else:
-                file = open(path + name, 'w')
-                file.writelines(str(self.__Map) + '\n')
-                file.writelines(str(self.__History) + '\n')
-                file.writelines(str(self.__max_min) + '\n')
-                file.writelines(str(self.__Top) + '\n' + str(self.__Turn) + '\n' + str(self.__Player) + '\n' + str(
-                    self.__Mode) + '\n')
-                return True
+        try:
+            file = open(path + name, 'w')
+            file.write(str(self.__Top) + '\n')
+            file.write(str(self.__Turn) + '\n')
+            file.write(str(self.__Player) + '\n')
+            file.write(str(self.__Mode) + '\n')
+            file.write(str(self.__rate) + '\n')
+            for i in self.__max_min:
+                file.write(str(i) + ' ')
+            file.write('\n')
+            for i in range(self.__Top):
+                file.write(str(self.__History[i][0]) + ',' + str(self.__History[i][1]))
+                if i is not self.__Top - 1:
+                    file.write(' ')
+            file.write('\n')
+            cnt = 0
+            for i in self.__Map:
+                for j in i:
+                    file.write(str(j))
+                    if cnt is not 224:
+                        file.write(' ')
+                    cnt += 1
+            file.write('\n')
+            l_s = len(self.__Scores)
+            for i in self.__Scores:
+                file.write(str(i[0]) + ',' + str(i[1]))
+                l_s -= 1
+                if l_s is not 0:
+                    file.write(' ')
+            file.write('\n')
+            l_s = len(self.__Neighbors)
+            for i in self.__Neighbors:
+                file.write(str(i[0]) + ',' + str(i[1]))
+                l_s -= 1
+                if l_s is not 0:
+                    file.write(' ')
+            file.write('\n')
+            file.close()
+            return True
+        except IOError as e:
+            print(e)
+            return False
 
     def repent(self):
         point = [0, 0]
@@ -308,27 +339,74 @@ class Gobang(Constant):
             self.__Top -= 1
             point[i] = self.__History[self.__Top]
             self.__History.pop(self.__Top)
+            self.__Map[point[i][0]][point[i][1]] = 0
+            self.__Scores = self.__get_scores(point=point[i], the_map=self.__Map, max_min=self.__max_min,
+                                              scores=self.__Scores)
         return point
 
-    def load(self, path, name):
-        if os.path.exists(path + name):
-            return False
+    def load_map(self, path, name):
+        self.__init__()
+        total = ''
+        if not os.path.exists(path + name):
+            return False, ''
         else:
-            i = 0
-            a = []
             file = open(path + name, 'r')
-            for line in file.readlines():
-                line = line.strip()
-                a[i] = line
-                i += 1
-            self.__Map = a[0]
-            self.__History = a[1]
-            self.__max_min = a[2]
-            self.__Top = a[3]
-            self.__Turn = a[4]
-            self.__Player = a[5]
-            self.__Mode = a[6]
-            return True
+            cnt = 0
+            for i in file.readlines():
+                i = i.split('\n')[0]
+                if cnt is 0:
+                    total += i + '-'
+                    self.__Top = int(i)
+                elif cnt is 1:
+                    if i == 'False':
+                        self.__Turn = False
+                    else:
+                        self.__Turn = True
+                elif cnt is 2:
+                    total += i + '-'
+                    if i == 'False':
+                        self.__Player = False
+                    else:
+                        self.__Player = True
+                elif cnt is 3:
+                    total += i + '-'
+                    self.__Mode = int(i)
+                elif cnt is 4:
+                    self.__rate = float(i)
+                elif cnt is 5:
+                    i = i.split(' ')
+                    for j in range(4):
+                        self.__max_min[j] = int(i[j])
+                elif cnt is 6:
+                    total += i + '-'
+                    i = i.split(' ')
+                    for j in i:
+                        if j == '':
+                            continue
+                        j = j.split(',')
+                        self.__History.append((int(j[0]), int(j[1])))
+                elif cnt is 7:
+                    i = i.split(' ')
+                    for j in range(15):
+                        for k in range(15):
+                            if i[k + 15 * j] == '':
+                                continue
+                            self.__Map[j][k] = int(i[k + 15 * j])
+                elif cnt is 8:
+                    i = i.split(' ')
+                    for j in range(60):
+                        k = i[j].split(',')
+                        self.__Scores[j][0] = int(k[0])
+                        self.__Scores[j][1] = int(k[1])
+                elif cnt is 9:
+                    i = i.split(' ')
+                    for j in i:
+                        if j == '':
+                            continue
+                        j = j.split(',')
+                        self.__Neighbors.append((int(j[0]), int(j[1])))
+                cnt += 1
+            return True, total
 
     def first_hand(self, the_map=None):
         if the_map is None:
