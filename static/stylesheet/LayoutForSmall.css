@@ -1,0 +1,42 @@
+#ChessBoard {
+    width: 300px;
+    height: 300px;
+    cursor: pointer;
+    float: left;
+    box-shadow: 2px 2px 20px peru;
+    background-size: 100%;
+    background-repeat: no-repeat;
+}
+
+.ChessBoardBase {
+    width: 20px;
+    height: 20px;
+    background-size: 100%;
+    background-repeat: no-repeat;
+}
+
+#Panels {
+    width: 300px;
+    height: 800px;
+    float: right;
+}
+
+#ButtonPanel {
+    margin: 10px 5% auto 5%;
+}
+
+#Timer {
+    width: 100px;
+    height: 100px;
+    border-radius: 50px;
+    margin: 0 50px auto 100px;
+}
+
+#TimerNumber {
+    float: left;
+    width: 75px;
+    height: 75px;
+    font-family: "Roboto", "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+    font-size: 50px;
+    margin: 12px 17px 12px 17px;
+}
