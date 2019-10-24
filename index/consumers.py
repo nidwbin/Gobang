@@ -46,6 +46,7 @@ class index(WebsocketConsumer):
                 if tmp is 0:
                     self.send('chess-' + str(point[0]) + '-' + str(point[1]))
                 elif tmp is -1:
+                    self.send('chess-' + str(point[0]) + '-' + str(point[1]))
                     self.send('win-BlackChess')
                 else:
                     self.send('chess-' + str(point[0]) + '-' + str(point[1]))

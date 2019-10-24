@@ -120,10 +120,10 @@ function setLayout() {
     width = window.innerWidth;
     height = window.innerHeight;
     width = width < height ? width : height;
-    if (width > 700) {
-        $('head').append('<link rel="stylesheet" type="text/css" href="/static/stylesheet/LayoutForLarge.css">');
+    if (width >= 700) {
+        $('head').append('<link id="layout" rel="stylesheet" type="text/css" href="/static/stylesheet/LayoutForLarge.css">');
     } else {
-        $('head').append('<link rel="stylesheet" type="text/css" href="/static/stylesheet/LayoutForSmall.css">');
+        $('head').append('<link id="layout" rel="stylesheet" type="text/css" href="/static/stylesheet/LayoutForSmall.css">');
     }
 }
 
